@@ -8,6 +8,8 @@ from tkinter import Entry, Label, StringVar, IntVar, Checkbutton, Listbox, NSEW,
 from tkinter.messagebox import showerror, showinfo
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+from scipy.io import loadmat, savemat
 
 # 讲数据进行切分
 # with open("./data/k_inv.csv") as f:
@@ -20,7 +22,7 @@ import matplotlib.pyplot as plt
 # data4 = data[3000:4000,:]
 # data5 = data[4000:,:]
 # np.savetxt("./data/k_inv1.csv", data1, delimiter=",")
-# np.savetxt("./data/k_inv2.csv", data2, delimiter=",")
+# np.savetxt("./data/k_inv.csv", data2, delimiter=",")
 # np.savetxt("./data/k_inv3.csv", data3, delimiter=",")
 # np.savetxt("./data/k_inv4.csv", data4, delimiter=",")
 # np.savetxt("./data/k_inv5.csv", data5, delimiter=",")
@@ -268,21 +270,24 @@ def show_result():
         # print("aaa")
         result = np.loadtxt(result_root + selected_file, delimiter=",")
         # redults[:,0]:攻角  results[:,1]:转速 results[:,2]:方差
-        y_min = np.min(result[:, 1]) - 10
-        y_max = np.max(result[:, 1]) + 10
+        y_min = np.min(result[:, 1]) - np.max(2 * np.sqrt(result[:, 2])) - 10
+        y_max = np.max(result[:, 1]) + np.max(2 * np.sqrt(result[:, 2])) + 10
+        # y_min = np.min(result[:, 1])
+        # y_max = np.max(result[:, 1])
         x_min = np.min(result[:, 0]) - 2
         x_max = np.max(result[:, 0]) + 2
         bar1, = plt.plot(result[:, 0], result[:, 1])
-
+        # print(111111)
         # 画方差
         bar2 = plt.fill_between(result[:, 0], result[:, 1] - 2 * np.sqrt(result[:, 2]),
                                 result[:, 1] + 2 * np.sqrt(result[:, 2]), color="b", alpha=0.2)
-        plt.ylim([y_min, y_max])
-        plt.xlim([x_min, x_max])
-
+        # print(222222)
+        plt.ylim((y_min, y_max))
+        plt.xlim((x_min, x_max))
+        # print(333333)
         bar1s.append(bar1)
         bar2s.append(bar2)
-    print(bar2s)
+        # print(bar2s)
 
 
 result_root = "./results/"
@@ -322,78 +327,83 @@ def isnum(value):
 
 # 加载K_inv, K(X,X)
 # import time
-import pandas as pd
+# import pandas as pd
 
 # start = time.clock()
 # pd.set_option("precision", 15)
-kinv_path = "./data/k_inv2.csv"
-showinfo("提示", "程序正在初始化，点击确定继续。")
-with open(kinv_path) as f:
-    k_inv = pd.read_csv(f, header=None, engine="c", float_precision="round_trip")
-# pd.set_option("precision",10)
-showinfo("提示", "初始化完成，点击确定继续。")
-k_inv = np.matrix(k_inv)
+# 加载逆矩阵
+# kinv_path = "./data/k_inv.csv"
+# showinfo("提示", "程序正在初始化，点击确定继续。")
+# # print(111111111)
+# with open(kinv_path) as f:
+#     k_inv = pd.read_csv(f, header=None, engine="c", float_precision="round_trip")
+# # pd.set_option("precision",10)
+# showinfo("提示", "初始化完成，点击确定继续。")
+# # print(22222222)
+# k_inv = np.matrix(k_inv)
 
 # end = time.clock()
 # print(end-start)
 
 # 加载训练数据
-train_data_x_path = "./data/data_train_x.csv"
-train_data_y_path = "./data/data_train_y.csv"
-
-with open(train_data_x_path) as f:
-    train_x = pd.read_csv(f, header=None, engine="c", float_precision="round_trip")
-with open(train_data_y_path) as f:
-    train_y = pd.read_csv(f, header=None, engine="c", float_precision="round_trip")
-
-train_x = np.matrix(train_x)
-train_y = np.matrix(train_y)
-
-train_n = train_x.shape[0]  # 训练样本的个数
+# train_data_x_path = "./data/data_train_x.csv"
+# train_data_y_path = "./data/data_train_y.csv"
+#
+# with open(train_data_x_path) as f:
+#     train_x = pd.read_csv(f, header=None, engine="c", float_precision="round_trip")
+# with open(train_data_y_path) as f:
+#     train_y = pd.read_csv(f, header=None, engine="c", float_precision="round_trip")
+#
+# train_x = np.matrix(train_x)
+# train_y = np.matrix(train_y)
+#
+# train_n = train_x.shape[0]  # 训练样本的个数
 
 # 训练数据的均值跟标准差
-from decimal import Decimal
+# from decimal import Decimal
+
 data_mean = np.matrix([2.678233901, 0.983663833, 0.134607395, 1.107395098])
 data_std = np.matrix([4.305732638, 0.267103551, 0.047571711, 0.079783933])
+
 
 # # 最终均值函数
 # mu = 0.019752
 
 
-def get_k_value(x1, x2):
-    """
-        x1,x2为两个样本的输入，计算这两个样本对应的核函数的值
-    :param x1:
-    :param x2:
-    :return:
-    """
-    l1 = 0.158382815693785
-    sf1 = 0.159979138825701
-    l2 = 0.151679897939583
-    sf2 = 2.002259928266838
-    l3 = 8.743306292059724
-    sf3 = 24.655615708784332
-    l4 = 0.001162083466432
-    sf4 = 1.379389938610182
-    an1 = 59.504226013320988
-    an2 = 2.910808991324680
-    an3 = 1.000485762149749
-    # n, d = x1.shape
-    k = an1**2*(sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)
-                +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)
-                +sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
-                +sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2))+\
-        an2**2*(sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)
-                +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
-                +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
-                +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
-                +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
-                +sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2))+\
-        an3**2*(sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
-                +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
-                +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
-                +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2))
-    return k
+# def get_k_value(x1, x2):
+#     """
+#         x1,x2为两个样本的输入，计算这两个样本对应的核函数的值
+#     :param x1:
+#     :param x2:
+#     :return:
+#     """
+#     l1 = 0.158382815693785
+#     sf1 = 0.159979138825701
+#     l2 = 0.151679897939583
+#     sf2 = 2.002259928266838
+#     l3 = 8.743306292059724
+#     sf3 = 24.655615708784332
+#     l4 = 0.001162083466432
+#     sf4 = 1.379389938610182
+#     an1 = 59.504226013320988
+#     an2 = 2.910808991324680
+#     an3 = 1.000485762149749
+#     # n, d = x1.shape
+#     k = an1**2*(sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)
+#                 +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)
+#                 +sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
+#                 +sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2))+\
+#         an2**2*(sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)
+#                 +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
+#                 +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
+#                 +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
+#                 +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
+#                 +sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2))+\
+#         an3**2*(sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)
+#                 +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
+#                 +sf1**2*np.exp(-1/2*(x1[0,0]-x2[0,0])**2/l1**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2)
+#                 +sf2**2*np.exp(-1/2*(x1[0,1]-x2[0,1])**2/l2**2)*sf3**2*np.exp(-1/2*(x1[0,2]-x2[0,2])**2/l3**2)*sf4**2*np.exp(-1/2*(x1[0,3]-x2[0,3])**2/l4**2))
+#     return k
 
 def predict_pl():
     """
@@ -447,40 +457,66 @@ def predict_pl():
     speeds = np.array([speed] * aoas_len).reshape(-1, 1)
     areas = np.array([area] * aoas_len).reshape(-1, 1)
 
-    test_x = np.matrix(np.concatenate((aoas, mas, speeds, areas), axis=1))
+    test_x = np.concatenate((aoas, mas, speeds, areas), axis=1)
 
     # 标准化
     test_x = (test_x - data_mean) / np.tile(data_std, (aoas_len, 1))
-    test_n = test_x.shape[0]  # 测试样本的个数
-    # 计算k_2, K(X', X)
-    k_2 = np.zeros((test_n, train_n))
+
+    # 判断某个文件是否存在test_data1中，如果存在则读取，否则创建并读取
+    # 文件名使用参数命名
+    filename = str(aoa1) + "_" + str(aoa2) + "_" + str(ma) + "_" + str(speed) + "_" + str(area) + ".mat"
+    filepath1 = "./test_data1/train_x.mat"
+    filepath2 = "./test_data1/train_y.mat"
+    # filepath3 = "./test_data1/train_y.mat"
+    filepath3 = "./test_data1/" + filename
+    if os.path.exists(filepath3):
+        import matlab.engine as engine
+        eng = engine.start_matlab()
+        eng.cd(os.getcwd(), nargout=0)
+        # k_2, k_3 = eng.getK(filepath1, filepath2,nargout =2) # k_2:k(x,x')   k_3:k(x',x')
+        speed_mean, speed_variance = eng.getMeanAndS2(filepath1, filepath2, filepath3, nargout=2)
+    else:
+        savemat("./test_data1/" + filename, mdict={"test_x": test_x})
+        import matlab.engine as engine
+        eng = engine.start_matlab()
+        eng.cd(os.getcwd(), nargout=0)
+        # k_2, k_3 = eng.getK(filepath1, filepath2, nargout=2)  # k_2:k(x,x')   k_3:k(x',x')
+        speed_mean, speed_variance = eng.getMeanAndS2(filepath1, filepath2, filepath3, nargout=2)
+
+    # test_n = test_x.shape[0]  # 测试样本的个数
+    # # 计算k_2, K(X', X)
+    # k_2 = np.zeros((test_n, train_n))
+    # # print(k_2)
+    # for i in range(test_n):
+    #     x = np.matrix(test_x[i, :])
+    #     for j in range(train_n):
+    #         z = train_x[j, :]
+    #         # print(z)
+    #         k_2[i, j] = get_k_value(x,z)
+
+    # k_2 = np.matrix(k_2)
+    #
+    # # 计算k_3, K(x',x')
+    # k_3 = np.zeros((test_n, test_n))
+    # for i in range(test_n):
+    #     x = np.matrix(test_x[i, :])
+    #     for j in range(test_n):
+    #         z = np.matrix(test_x[j, :])
+    #         k_3[i, j] = get_k_value(x,z)
+    # k_2 = np.matrix(np.array(k_2))
+    # k_3 = np.matrix(np.array(k_3))
+    # np.set_printoptions(precision=11)
     # print(k_2)
-    for i in range(test_n):
-        x = np.matrix(test_x[i, :])
-        for j in range(train_n):
-            z = train_x[j, :]
-            # print(z)
-            k_2[i, j] = get_k_value(x,z)
-
-    k_2 = np.matrix(k_2)
-
-    # 计算k_3, K(x',x')
-    k_3 = np.zeros((test_n, test_n))
-    for i in range(test_n):
-        x = np.matrix(test_x[i, :])
-        for j in range(test_n):
-            z = np.matrix(test_x[j, :])
-            k_3[i, j] = get_k_value(x,z)
-    k_3 = np.matrix(k_3)
     # 计算转速
     # print("k_2:", k_2.shape)
     # print("k_inv:", k_inv.shape)
     # print("train_y:", train_y.shape)
-    speed_mean = k_2 * k_inv * train_y
-    speed_variance = np.diag(k_3 - k_2 * k_inv * k_2.T).reshape(-1, 1)
-    print("aoas:", aoas.shape)
-    print("speed_mean:", speed_mean.shape)
-    print("speed_variance:", speed_variance.shape)
+    # speed_mean = k_2.T * k_inv * train_y
+    # speed_variance = np.diag(k_3 - k_2.T * k_inv * k_2).reshape(-1, 1)
+    # print(speed_variance)
+    # print("aoas:", aoas.shape)
+    # print("speed_mean:", speed_mean.shape)
+    # print("speed_variance:", speed_variance.shape)
 
     results = np.concatenate((np.matrix(aoas), speed_mean, speed_variance), axis=1)
     filename = str(aoa1) + "-" + str(aoa2) + "-" + str(ma) + "-" + str(speed) + "-" + str(area) + ".csv"
@@ -521,36 +557,49 @@ def predict():
 
     # 将数据标准化
     test_x = (test_x - data_mean) / data_std
-    test_n = test_x.shape[0]  # 测试样本的个数
-    # 计算k_2, K(X', X)
-    k_2 = np.zeros((test_n, train_n))
-    # print(k_2)
-    for i in range(test_n):
-        x = test_x[i, :]
-        # print(x.shape)
-        for j in range(train_n):
-            z = train_x[j, :]
-            # print(z.shape)
-            # print(z)
-            k_2[i, j] = get_k_value(x,z)
-            # print(k_2)
-    k_2 = np.matrix(k_2)
+    # 判断某个文件是否存在test_data2中，如果存在则读取，否则创建并读取
+    filepath1 = "./test_data2/train_x.mat"
+    filepath2 = "./test_data2/train_y.mat"
+    # filepath3 = "./test_data1/train_y.mat"
+    filepath3 = "./test_data2/test_x.mat"
 
-    # 计算k_3, K(x',x')
-    k_3 = np.zeros((test_n, test_n))
-    for i in range(test_n):
-        x = test_x[i, :]
-        for j in range(test_n):
-            z = test_x[j, :]
-            k_3[i, j] = get_k_value(x,z)
-    k_3 = np.matrix(k_3)
-    # 计算转速
-    print("k_2:", k_2.shape)
-    print("k_inv:", k_inv.shape)
-    print("train_y:", train_y.shape)
-    # speed_mean = k_2 * k_inv * (train_y - np.tile(mu, (train_y.shape[0], train_y.shape[1])))
-    speed_mean = k_2 * k_inv * train_y
-    speed_variance = np.diag(k_3 - k_2 * k_inv * k_2.T)
+    savemat(filepath3, mdict={"test_x": test_x})
+    import matlab.engine as engine
+    eng = engine.start_matlab()
+    eng.cd(os.getcwd(), nargout=0)
+    # k_2, k_3 = eng.getK(filepath1, filepath2, nargout=2)  # k_2:k(x,x')   k_3:k(x',x')
+    speed_mean, speed_variance = eng.getMeanAndS2(filepath1, filepath2, filepath3, nargout=2)
+
+    # test_n = test_x.shape[0]  # 测试样本的个数
+    # # 计算k_2, K(X', X)
+    # k_2 = np.zeros((test_n, train_n))
+    # # print(k_2)
+    # for i in range(test_n):
+    #     x = test_x[i, :]
+    #     # print(x.shape)
+    #     for j in range(train_n):
+    #         z = train_x[j, :]
+    #         # print(z.shape)
+    #         # print(z)
+    #         k_2[i, j] = get_k_value(x, z)
+    #         # print(k_2)
+    # k_2 = np.matrix(k_2)
+    #
+    # # 计算k_3, K(x',x')
+    # k_3 = np.zeros((test_n, test_n))
+    # for i in range(test_n):
+    #     x = test_x[i, :]
+    #     for j in range(test_n):
+    #         z = test_x[j, :]
+    #         k_3[i, j] = get_k_value(x, z)
+    # k_3 = np.matrix(k_3)
+    # # 计算转速
+    # print("k_2:", k_2.shape)
+    # print("k_inv:", k_inv.shape)
+    # print("train_y:", train_y.shape)
+    # # speed_mean = k_2 * k_inv * (train_y - np.tile(mu, (train_y.shape[0], train_y.shape[1])))
+    # speed_mean = k_2 * k_inv * train_y
+    # speed_variance = np.diag(k_3 - k_2 * k_inv * k_2.T)
 
     entry_speed1_var.set(round(float(speed_mean), 2))
     entry_variance_var.set(round(float(speed_variance), 2))
@@ -668,16 +717,4 @@ listbox["borderwidth"] = 2
 listbox.grid(row=0, rowspan=8, column=9, columnspan=9, padx=80, sticky=NSEW)
 # scrollbar.grid( column=2, row=0, sticky=N+S)
 listbox["font"] = ("Courier New", 10, "bold")
-
 win.mainloop()
-
-
-# if __name__ == "__main__":
-#     data_x = np.array([[1,2,3,4],[4,5,6,7],[7,8,9,10]])
-#     k = np.zeros((data_x.shape[0],data_x.shape[0]))
-#     for i in range(data_x.shape[0]):
-#         x = data_x[i,:].reshape(1,-1)
-#         for j in range(data_x.shape[0]):
-#             z = data_x[j,:].reshape(1,-1)
-#             k[i,j] = float(get_k_value(x,z))
-#     print(k)
